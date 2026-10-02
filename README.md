@@ -10,7 +10,11 @@ Tested with DaVinci Resolve and Adobe Premiere Pro.
 
 ## Install
 
-Requires macOS 11 or later and Apple's Command Line Tools (which provide Swift and Python).
+Requires macOS 11 or later, on Apple silicon or Intel. There are two ways to get the app.
+
+### Option 1: Build it yourself (recommended)
+
+Building on your own Mac gives you an app macOS trusts straight away, with no security warning.
 
 ```bash
 git clone https://github.com/rlschroeder/wav-joiner.git
@@ -18,7 +22,21 @@ cd wav-joiner
 bash build_app.sh
 ```
 
-`WAV Joiner.app` appears in the folder. Move it to Applications or your Dock. If the Command Line Tools are missing, the script starts Apple's installer; run it again when that finishes.
+`WAV Joiner.app` appears in the folder. Move it to Applications or your Dock. This needs Apple's Command Line Tools (which provide Swift and Python); if they're missing, the script starts Apple's installer, and you run it again when that finishes.
+
+### Option 2: Download the pre-built app
+
+Download `WAV-Joiner-<version>-macOS.zip` from the [latest release](https://github.com/rlschroeder/wav-joiner/releases/latest), unzip it, and move `WAV Joiner.app` to Applications.
+
+**This app is not signed with an Apple Developer ID, so macOS will say it's from an unidentified developer and won't open it at first.** That's expected for a free open-source tool, not a sign that something is wrong. If you'd rather not deal with the warning, use Option 1 instead: an app you build yourself opens without it.
+
+To open the downloaded app anyway:
+
+1. Double-click **WAV Joiner**. macOS blocks it; click **Done** (or **OK**).
+2. Open **System Settings → Privacy & Security** and scroll down to the Security section.
+3. Next to the message about WAV Joiner, click **Open Anyway**, then confirm with your password or Touch ID.
+
+You only need to do this once. The app runs its join engine with the Mac's built-in Python, so on a Mac without Apple's Command Line Tools, macOS will offer to install them the first time you join files. Click **Install** and try again when it finishes.
 
 ## Use
 
@@ -68,7 +86,8 @@ wav_joiner.py       join engine (Python, standard library only)
 app/main.swift      macOS window app that runs the engine
 app/Info.plist      app bundle settings
 app/AppIcon.icns    app icon (source art in icon/)
-build_app.sh        builds WAV Joiner.app
+build_app.sh        builds WAV Joiner.app (universal: Apple silicon + Intel)
+make_release.sh     builds and zips the app into dist/ for a GitHub Release
 tests/              test suite
 ```
 
