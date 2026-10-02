@@ -10,7 +10,7 @@ Tested with DaVinci Resolve and Adobe Premiere Pro.
 
 ## Install
 
-Requires macOS 11 or later, on Apple silicon or Intel. There are two ways to get the app.
+Requires macOS 11 or later on Apple silicon, or macOS 13 or later on Intel. There are two ways to get the app.
 
 ### Option 1: Build it yourself (recommended)
 

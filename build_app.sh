@@ -11,9 +11,12 @@ if ! xcode-select -p >/dev/null 2>&1; then
 fi
 rm -rf "$APP" build
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" build
-for arch in arm64 x86_64; do
-  swiftc -O -target "$arch-apple-macos11" app/main.swift -framework AppKit -o "build/$arch"
-done
+# Intel slice targets macOS 13: older Intel targets need Swift back-deploy
+# libraries the Command Line Tools no longer ship.
+swiftc -O -target arm64-apple-macos11 app/main.swift -framework AppKit -o build/arm64
+swiftc -O -target x86_64-apple-macos13 app/main.swift -framework AppKit -o build/x86_64 2>&1 \
+  | grep -v "libswiftCompatibilityPacks" || true
+test -f build/x86_64
 lipo -create build/arm64 build/x86_64 -output "$APP/Contents/MacOS/WAV Joiner"
 rm -rf build
 cp app/Info.plist "$APP/Contents/Info.plist"
