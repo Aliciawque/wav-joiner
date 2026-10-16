@@ -263,7 +263,7 @@ def write_joined(chain, out_path):
 
 
 def collect_dirs(paths):
-    """Map folder -> list of wav paths, walking dropped folders recursively."""
+    """Map folder -> unique wav paths, walking dropped folders recursively."""
     dirs = {}
     for p in paths:
         p = os.path.abspath(p)
@@ -276,7 +276,9 @@ def collect_dirs(paths):
         elif (os.path.isfile(p) and is_candidate(os.path.basename(p))
               and os.path.basename(os.path.dirname(p)) != SOURCE_DIR):
             dirs.setdefault(os.path.dirname(p), []).append(p)
-    return dirs
+    # A file may be selected directly and through one or more dropped folders.
+    # Keep its first occurrence so repeated inputs cannot create false ambiguity.
+    return {folder: list(dict.fromkeys(files)) for folder, files in dirs.items()}
 
 
 def is_candidate(name):

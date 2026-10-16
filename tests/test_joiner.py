@@ -105,6 +105,59 @@ check(len(rows) == 5, "one CSV row per source file")
 # Re-run: no duplicates
 wj.main([T])
 
+# Repeated or overlapping selections must not create false ambiguous joins.
+for name in ["repeated_folder", "repeated_file", "repeated_first", "folder_and_file", "parent_and_child",
+             "relative_and_absolute"]:
+    parent = os.path.join(T, name); folder = os.path.join(parent, "Day1")
+    os.makedirs(folder)
+    first = os.path.join(folder, "Take.wav"); second = os.path.join(folder, "Take_1.wav")
+    x1 = make("Take.wav", base, 2, 24, 100, folder=folder)
+    x2 = make("Take_1.wav", base + 100, 2, 24, 120, folder=folder)
+    selections = {
+        "repeated_folder": [folder, folder],
+        "repeated_file": [first, second, second],
+        "repeated_first": [first, first, second],
+        "folder_and_file": [folder, second],
+        "parent_and_child": [parent, folder],
+        "relative_and_absolute": [os.path.relpath(folder), folder],
+    }
+    paths = selections[name]
+    found = wj.collect_dirs(paths)
+    check(len(found.get(folder, [])) == 2 and set(found[folder]) == {first, second},
+          name + ": each source collected once")
+    wj.main(paths if name == "repeated_first" else ["--no-move"] + paths)
+    joined = os.path.join(folder, "Take_joined.wav")
+    check(os.path.exists(joined), name + ": overlapping selection joins take")
+    if os.path.exists(joined):
+        w, a = read(joined)
+        check(a == x1 + x2, name + ": joined audio bit-identical")
+    reports = glob.glob(os.path.join(folder, "wav_joiner_report_*.csv"))
+    with open(reports[0], encoding="utf-8-sig", newline="") as report:
+        selected_rows = list(csv.DictReader(report))
+    check(len(selected_rows) == 2 and all(r["status"] == "joined" for r in selected_rows),
+          name + ": one joined report row per source")
+    if name == "repeated_first":
+        check(not os.path.exists(first) and not os.path.exists(second)
+              and sorted(os.listdir(os.path.join(folder, wj.SOURCE_DIR))) == ["Take.wav", "Take_1.wav"],
+              name + ": each source is moved once")
+    else:
+        check(os.path.exists(first) and os.path.exists(second), name + ": no-move keeps sources")
+
+# Different files with the same start time remain genuinely ambiguous.
+amb = os.path.join(T, "ambiguous"); os.makedirs(amb)
+make("Start.wav", base, 2, 24, 100, folder=amb)
+make("NextA.wav", base + 100, 2, 24, 120, folder=amb)
+make("NextB.wav", base + 100, 2, 24, 120, folder=amb)
+found = wj.collect_dirs([amb, amb])
+check(len(found[amb]) == 3, "distinct ambiguous sources are retained")
+amb_rows, made, no_tc = wj.process_folder(amb, found[amb])
+check(made == 0 and not os.path.exists(os.path.join(amb, "Start_joined.wav")),
+      "genuinely ambiguous take is not joined")
+check(len(amb_rows) == 1 and "2 possible next files" in amb_rows[0]["notes"],
+      "genuinely ambiguous take is reported once")
+check(all(os.path.exists(os.path.join(amb, n)) for n in ["Start.wav", "NextA.wav", "NextB.wav"]),
+      "ambiguous sources are not moved")
+
 # RF64 path with tiny limit
 wj.RIFF_LIMIT = 1000
 R = os.path.join(T, "rf"); os.makedirs(R)
